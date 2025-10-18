@@ -1,0 +1,156 @@
+"""
+Netflix Data Analysis Project
+Author: Navid Bordbar
+Description: Exploratory Data Analysis (EDA) on Netflix dataset.
+"""
+# === 1. Import Libraries ===
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from pathlib import Path
+
+# === 2. Setup ===
+plt.style.use("seaborn-v0_8-whitegrid")
+plt.rcParams.update({
+    "figure.figsize": (8, 5),
+    "axes.labelsize": 12,
+    "axes.titlesize": 14,
+    "font.family": "sans-serif"
+})
+
+# Define Paths
+DATA_PATH = Path("data/netflix_titles.csv")
+REPORTS_DIR = Path("reports")
+REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+
+# === 3. Load and Copy Dataset ===
+df_raw = pd.read_csv(DATA_PATH)
+df = df_raw.copy()
+
+# === 4. Quick Overview Function ===
+def quick_overview(df):
+    """Display basic information about the dataset."""
+    print("Shape:", df.shape)
+    print("\nDtypes:\n", df.dtypes)
+    print("\nMissing Values:\n", df.isna().sum())
+    print("\nNumeric Summary:\n", df.describe().T)
+
+quick_overview(df)
+
+# === 5. Handle Missing Values ===
+text_cols = ['director', 'cast', 'country']
+df[text_cols] = df[text_cols].fillna('Unknown')
+df['date_added'] = df['date_added'].fillna('Unknown')
+df['rating'] = df['rating'].fillna(df['rating'].mode()[0])
+df['duration'] = df['duration'].fillna('Unknown')
+
+# === 6. Convert Dates ===
+df['date_added'] = pd.to_datetime(df['date_added'], errors='coerce')
+df['year_added'] = df['date_added'].dt.year
+
+# === 7.  Yearly Trend of Movies & TV Shows ===
+yearly_counts = df.groupby(['year_added', 'type']).size().unstack(fill_value=0)
+
+plt.figure(figsize=(10, 6))
+plt.plot(yearly_counts.index, yearly_counts['Movie'], marker='o', label='Movies')
+plt.plot(yearly_counts.index, yearly_counts['TV Show'], marker='o', label='TV Shows')
+plt.title("Number of Movies and TV Shows Added per Year on Netflix", fontsize=14)
+plt.xlabel("Year Added")
+plt.ylabel("Count")
+plt.legend(title="Type")
+plt.tight_layout()
+plt.savefig(REPORTS_DIR / "yearly_trends.png", dpi=300, bbox_inches='tight')
+plt.close()
+
+# === 8. Top 10 Countries by Production ===
+df_countries = df[df['country'] != 'Unknown']
+country_counts = df_countries['country'].value_counts().head(10)
+
+plt.figure(figsize=(10, 6))
+sns.barplot(x=country_counts.values, y=country_counts.index, color='skyblue', edgecolor='black')
+plt.title("Top 10 Countries with Most Productions on Netflix", fontsize=14)
+plt.xlabel("Number of Titles")
+plt.ylabel("Country")
+plt.tight_layout()
+plt.savefig(REPORTS_DIR / "top_countries.png", dpi=300, bbox_inches='tight')
+plt.close()
+
+# === 9. Top 10 Genres ===
+top_genres = df['listed_in'].value_counts().head(10)
+plt.figure(figsize=(10, 6))
+sns.barplot(x=top_genres.values, y=top_genres.index, palette="viridis")
+plt.title("Top 10 Most Popular Genres on Netflix", fontsize=14)
+plt.xlabel("Number of Titles")
+plt.ylabel("Genre")
+plt.tight_layout()
+plt.savefig(REPORTS_DIR / "top_genres.png", dpi=300, bbox_inches='tight')
+plt.close()
+
+# === 10. Distribution of Movie Lengths ===
+df['duration_min'] = pd.to_numeric(df['duration'].str.replace(' min', '', regex=False), errors='coerce')
+df_movies = df.dropna(subset=['duration_min'])
+
+plt.figure(figsize=(8, 5))
+plt.hist(df_movies['duration_min'], bins=30, color='skyblue', edgecolor='black')
+plt.title("Distribution of Movie Lengths on Netflix")
+plt.xlabel("Duration (minutes)")
+plt.ylabel("Count")
+plt.tight_layout()
+plt.savefig(REPORTS_DIR / "movie_lengths.png", dpi=300, bbox_inches='tight')
+plt.close()
+
+# === 11. Month-wise Additions ===
+df.loc[:, 'month_added'] = df['date_added'].dt.month_name()
+month_counts = df['month_added'].value_counts()
+
+plt.figure(figsize=(10, 6))
+sns.barplot(x=month_counts.index, y=month_counts.values, palette="viridis")
+plt.title("Number of Titles Added per Month on Netflix", fontsize=14)
+plt.xlabel("Month")
+plt.ylabel("Number of Titles Added")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.savefig(REPORTS_DIR / "monthwise_titles.png", dpi=300, bbox_inches='tight')
+plt.close()
+
+# === 12. Pie Chart: Movies vs TV Shows ===
+type_counts = df_raw['type'].value_counts()
+
+plt.figure(figsize=(6, 6))
+plt.pie(
+    type_counts,
+    labels=type_counts.index,
+    autopct='%1.1f%%',
+    startangle=90,
+    colors=['skyblue', 'lightcoral'],
+    explode=[0.05, 0]
+)
+plt.title("Distribution of Content Types on Netflix", fontsize=14)
+plt.tight_layout()
+plt.savefig(REPORTS_DIR / "content_type_distribution.png", dpi=300, bbox_inches='tight')
+plt.close()
+
+# === 13. Relationship Between Genre and Release Year ===
+df = df.dropna(subset=['listed_in', 'release_year'])
+genres_expanded = df.assign(listed_in=df['listed_in'].str.split(',')).explode('listed_in')
+genres_expanded['listed_in'] = genres_expanded['listed_in'].str.strip()
+
+genre_year = genres_expanded.pivot_table(
+    index='listed_in',
+    columns='release_year',
+    values='show_id',
+    aggfunc='count',
+    fill_value=0
+)
+
+plt.figure(figsize=(14, 10))
+sns.heatmap(genre_year, cmap='YlOrRd', linewidths=0.3, linecolor='white')
+plt.title("Relationship Between Release Year and Genre on Netflix", fontsize=16)
+plt.xlabel("Release Year")
+plt.ylabel("Genre")
+plt.tight_layout()
+plt.savefig(REPORTS_DIR / "genre_year_heatmap.png", dpi=300, bbox_inches='tight')
+plt.close()
+
+print("✅ Analysis complete! All charts saved in 'reports/' folder.")
