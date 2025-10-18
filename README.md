@@ -1,9 +1,9 @@
-# 🎬 Netflix Data Analysis
+# Netflix Data Analysis
 
 This project explores the **Netflix Movies and TV Shows dataset** using Python, Pandas, and Seaborn.  
 It performs comprehensive **Exploratory Data Analysis (EDA)** — uncovering trends in content types, genres, durations, and global production patterns.
 
-## 📁 Project Structure
+##Project Structure
 netflix_data_analysis/
 ├── data/
 │ └── netflix_titles.csv
@@ -18,7 +18,7 @@ netflix_data_analysis/
 └── netflix_analysis.py
 
 
-## ⚙️ Technologies Used
+## Technologies Used
 
 - **Python 3.10+**
 - **pandas** – data manipulation  
@@ -27,7 +27,7 @@ netflix_data_analysis/
 - **seaborn** – advanced plotting  
 
 
-## ⚙️ Technologies Used
+##  Technologies Used
 
 | Library | Purpose |
 |----------|----------|
@@ -36,7 +36,7 @@ netflix_data_analysis/
 | **Matplotlib** | Static visualizations |
 | **Seaborn** | Advanced, aesthetic data visualization |
 
-## 🚀 How to Run
+##  How to Run
 
 ```bash
 # 1. Clone the repository
